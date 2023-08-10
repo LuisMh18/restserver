@@ -6,6 +6,8 @@ class Server {
         this.app = express();
         this.port = process.env.PORT;
 
+        this.usuarios = '/api/usuarios';
+
         //Middlewares
         this.middlewares();
 
@@ -21,11 +23,7 @@ class Server {
     }
 
     routes(){
-        this.app.get('/api', (req, res) => {
-            res.json({
-                msg:"get API"
-            });
-        });
+        this.app.use(this.usuarios, require('../routes/usuarios'));
     }
 
     listen(){
