@@ -30,7 +30,6 @@ const create = async(req = request, res = response) => {
     await usuario.save();
 
     res.json({
-        msg:"create!",
         usuario
     });
 
