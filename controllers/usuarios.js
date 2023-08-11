@@ -1,6 +1,6 @@
-const { response } = require('express');
+const { response, request } = require('express');
 
-const findAll = (req, res = response) => {
+const findAll = (req = request, res = response) => {
     res.json({
         msg:"get API"
     })
