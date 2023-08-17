@@ -1,25 +1,24 @@
 const { response, request } = require('express');
-const { Categoria } = require('../models');
-
+const { Producto } = require('../models');
 
 const findAll = async(req = request, res = response) => {
-    
     const { limite = 5, desde = 0 } = req.query;
     const query = { estado: true };
 
     try{
 
-        const [total, categorias] = await Promise.all([
-            Categoria.countDocuments(query),
-            Categoria.find(query)
+        const [total, productos] = await Promise.all([
+            Producto.countDocuments(query),
+            Producto.find(query)
                       .populate('usuario', 'nombre')
+                      .populate('categoria', 'nombre')
                       .skip( Number( desde ) )
                       .limit( Number( limite ) )
         ]);
 
         const data = {
             total,
-            categorias
+            productos
         }
 
         res.status(200).json(data);
@@ -31,18 +30,18 @@ const findAll = async(req = request, res = response) => {
         });
 
     }
-    
-};
+}
 
 const findOne = async(req = request, res = response) => {
 
     const { id } = req.params;
 
     try{
-        const categoria = await Categoria.findById(id)
-                                .populate('usuario', 'nombre');
+        const producto = await Producto.findById(id)
+                                .populate('usuario', 'nombre')
+                                .populate('categoria', 'nombre');
     
-        res.status(200).json(categoria);
+        res.status(200).json(producto);
 
     } catch(e){
         console.log(e);
@@ -50,55 +49,60 @@ const findOne = async(req = request, res = response) => {
             msg:'Error interno del servidor'
         });
     }
-};
+
+}
 
 const create = async(req = request, res = response) => {
 
-    const nombre = req.body.nombre.toUpperCase();
+    const { estado, usuario, ...body } = req.body;
 
-    try{
+    try {
 
-        const categoriaDB = await Categoria.findOne({ nombre });
+        const productoDB = await Producto.findOne({ nombre: body.nombre.toUpperCase() });
 
-        if(categoriaDB){
+        if(productoDB){
             return res.status(400).json({
-                msg: `La categoría ${ categoriaDB.nombre }, ya existe`
+                msg: `El producto ${ productoDB.nombre }, ya existe`
             }); 
         }
 
         const data = {
-            nombre,
-            usuario: req.usuario._id
+            ...body,
+            nombre: body.nombre.toUpperCase(),
+            usuario: req.usuario._id,
         }
 
-        //preparar la data a guardar
-        const categoria = new Categoria( data );
+        const producto = new Producto(data);
 
-        //guardar db
-        await categoria.save();
+        await producto.save();
 
-        res.status(201).json(categoria);
+        res.status(200).json(producto);
 
-
-        } catch(e){
-            console.log(e);
-            res.status(500).json({
-                msg:'Error interno del servidor'
-            });
-        }
+    } catch(e){
+        console.log(e);
+        res.status(500).json({
+            msg:'Error interno del servidor'
+        });
+    }
 
 }
+
 
 const update = async(req = request, res = response) => {
 
     const { id } = req.params;
     const { estado, usuario, ...data } = req.body;
-    data.nombre = data.nombre.toUpperCase();
+    
+    if(data.nombre){
+        data.nombre = data.nombre.toUpperCase();
+    }
     data.usuario = req.usuario._id;
+
     try{
-       const categoria = await Categoria.findByIdAndUpdate(id, data, { new: true });
+       const producto = await Producto.findByIdAndUpdate(id, data, { new: true });
+
        res.status(200).json({
-        categoria
+         producto
        });
 
     } catch(e){
@@ -109,31 +113,32 @@ const update = async(req = request, res = response) => {
     }
     
 }
+
 
 const deleteOne = async(req = request, res = response ) => {
     
     const { id } = req.params;
     const query = { estado: false };
 
-    try{
-       const categoria = await Categoria.findByIdAndUpdate(id, query, { new: true });
+    try {
+       const producto = await Producto.findByIdAndUpdate(id, query, { new: true });
 
        res.status(200).json({
-        categoria
+         producto
        });
 
-        } catch(e){
-            console.log(e);
-            res.status(500).json({
-                msg:'Error interno del servidor'
-            });
-        }
+    } catch(e){
+        console.log(e);
+        res.status(500).json({
+            msg:'Error interno del servidor'
+        });
+    }
 }
- 
+
 module.exports = {
+    create,
     findAll,
     findOne,
-    create,
     update,
     deleteOne
 }
